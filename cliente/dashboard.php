@@ -33,9 +33,9 @@ if (!isset($_SESSION['login'])) {
             <div class="form-container visible">
                 <h1>Servicios Disponibles</h1>
                 <ul class="service-list">
-                    <li><button class="service-button" onclick="window.location.href='crear_cuenta.php'">Crear Cuenta</button></li>
-                    <li><button class="service-button" onclick="window.location.href='deposito.php'">Depósito</button></li>
-                    <li><button class="service-button" onclick="window.location.href='retiro.php'">Retiro</button></li>
+                    <li><button class="service-button" onclick="window.location.href='/colas/cliente/crear_cuenta.php'">Crear Cuenta</button></li>
+                    <li><button class="service-button" onclick="window.location.href='/colas/cliente/deposito.php'">Depósito</button></li>
+                    <li><button class="service-button" onclick="window.location.href='/colas/cliente/retiro.php'">Retiro</button></li>
                 </ul>
             </div>
         </div>

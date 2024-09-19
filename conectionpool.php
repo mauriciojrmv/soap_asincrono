@@ -2,7 +2,7 @@
 class ConnectionPool {
     private static $instance = null;
     private $connections = [];
-    private $maxConnections = 5;
+    private $maxConnections = 500;
 
     // Constructor privado para asegurar que solo haya una instancia del pool
     private function __construct() {

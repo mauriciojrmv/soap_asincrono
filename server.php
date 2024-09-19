@@ -9,8 +9,10 @@ class PersonService {
     public function __construct() {
         try {
             // Obtener el cliente SOAP desde el pool de conexiones
-            $pool = ConnectionPool::getInstance();
-            $this->soapClient = $pool->getConnection();
+            $this->soapClient = new SoapClient(null, [
+                'location' => "http://localhost:8000/colas/bd.php", // URL de PC2
+                'uri' => "urn:DatabaseService"
+            ]);
     
             // Instanciar la clase Peticiones
             $this->peticiones = new Peticiones();
