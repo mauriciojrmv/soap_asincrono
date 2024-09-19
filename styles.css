@@ -1,0 +1,301 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    font-family: 'Arial', sans-serif;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.container {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    position: relative;
+    padding-left: 350px;
+    transition: transform 0.6s ease-in-out;
+}
+
+.container.moved {
+    transform: translateX(-500px);
+}
+
+.left-side {
+    background: linear-gradient(135deg, #ff512f, #dd2476);
+    width: 60%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    padding: 2rem;
+    border-radius: 20px;
+    transition: width 0.6s ease-in-out;
+    z-index: 1;
+}
+
+.left-side.expanded {
+    width: 60%;
+    border-top-right-radius: 20px;
+    border-bottom-right-radius: 20px;
+}
+
+.left-side h2 {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+.left-side p {
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.left-side button {
+    padding: 0.8rem 2rem;
+    background-color: white;
+    color: #ff512f;
+    border: none;
+    border-radius: 25px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.left-side button:hover {
+    background-color: #ff9f69;
+}
+
+.right-side {
+    width: 60%;
+    background-color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: width 0.6s ease-in-out;
+}
+
+.right-side.hidden {
+    width: 40%;
+}
+
+.form-container {
+    background-color: white;
+    padding: 3rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    max-width: 600px;
+    width: 100%;
+    opacity: 0;
+    transition: opacity 0.6s ease-in-out;
+}
+
+.form-container.visible {
+    opacity: 1;
+}
+
+.form-container h1 {
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+    color: #333;
+    text-align: center;
+}
+
+.form-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 40px;
+    margin-bottom: 1rem;
+}
+
+.form-group {
+    width: 48%;
+}
+
+label {
+    display: block;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+    color: #666;
+    text-align: left;
+}
+
+input[type="text"],
+input[type="date"],
+select {
+    width: 100%;
+    padding: 0.8rem;
+    margin-bottom: 1.2rem;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 1rem;
+    color: #333;
+    background-color: #f9f9f9;
+    transition: border-color 0.3s ease;
+}
+
+input[type="text"]:focus,
+input[type="date"]:focus,
+select:focus {
+    border-color: #007bff;
+    outline: none;
+}
+
+button[type="submit"] {
+    width: 100%;
+    padding: 0.8rem;
+    background-color: #007bff;
+    border: none;
+    border-radius: 5px;
+    color: #fff;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-top: 1rem;
+}
+
+button[type="submit"]:hover {
+    background-color: #0056b3;
+}
+
+.message {
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+    font-size: 1rem;
+    text-align: center;
+}
+
+.error {
+    color: red;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+}
+
+.success {
+    color: green;
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+}
+
+@media (max-width: 768px) {
+    .container {
+        flex-direction: column;
+    }
+
+    .left-side {
+        width: 100%;
+        height: 40%;
+    }
+
+    .right-side {
+        width: 100%;
+        height: 60%;
+    }
+
+    .form-row {
+        flex-direction: column;
+    }
+
+    .form-group {
+        width: 100%;
+    }
+}
+
+    /* Botón de servicios (Crear Cuenta, Depósito, Retiro) */
+    .service-button {
+        width: 100%;
+        padding: 0.8rem;
+        background-color: #007bff;
+        border: none;
+        border-radius: 25px;
+        color: white;
+        font-size: 1rem;
+        cursor: pointer;
+        text-align: center;
+        margin-bottom: 1rem;
+        transition: background-color 0.3s ease;
+    }
+    
+    .service-button:hover {
+        background-color: #0056b3;
+    }
+    
+    /* Botón de cerrar sesión */
+    .logout-button {
+        width: 100%;
+        padding: 0.8rem;
+        background-color: #ff512f;
+        color: white;
+        border: none;
+        border-radius: 25px;
+        font-size: 1rem;
+        cursor: pointer;
+        margin-top: 2rem;
+        transition: background-color 0.3s ease;
+    }
+    
+    .logout-button:hover {
+        background-color: #ff9f69;
+    }
+    
+    .service-list {
+        list-style: none;
+        padding: 0;
+        text-align: center;
+    }
+    
+    /* Estilos para el Navbar */
+    .navbar {
+        background-color: #333;
+        overflow: hidden;
+        position: fixed;
+        top: 0;
+        width: 100%;
+        z-index: 999;
+        padding: 10px 0;
+    }
+    
+    .navbar ul {
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+        text-align: center;
+    }
+    
+    .navbar ul li {
+        display: inline;
+        padding: 0 20px;
+    }
+    
+    .navbar ul li a {
+        color: white;
+        text-decoration: none;
+        font-size: 18px;
+        font-weight: bold;
+        padding: 10px;
+        display: inline-block;
+    }
+    
+    .navbar ul li a:hover {
+        background-color: #575757;
+        border-radius: 5px;
+    }
+
+    /* Estilo para todos los inputs, incluyendo los de contraseña */
+input[type="text"], input[type="date"], input[type="password"], select {
+    width: 100%;
+    padding: 0.8rem;
+    margin-bottom: 1.2rem;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 1rem;
+    color: #333;
+    background-color: #f9f9f9;
+    transition: border-color 0.3s ease;
+}
+
+input[type="text"]:focus, input[type="date"]:focus, input[type="password"]:focus, select:focus {
+    border-color: #007bff;
+    outline: none;
+}
