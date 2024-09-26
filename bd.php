@@ -267,6 +267,7 @@ public function manejarErrorPeticion($peticion_id, $mensaje_error) {
 }
 
 
+
 // Método para procesar una transacción de depósito
 public function procesarDeposito($cuenta_id, $monto, $token, $callback_url) {
     try {
@@ -364,6 +365,10 @@ public function obtenerTransaccionesPendientesNotificacion() {
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
+
+
+
+
 
 // Marcar la transacción como en proceso de notificación
 public function marcarNotificacionEnProceso($token) {

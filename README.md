@@ -9,6 +9,8 @@ Este proyecto implementa un sistema de registro distribuido utilizando el metodo
 ### Requisitos previos
 1. **PHP**: Asegurate de tener instalado php. Asegurate que el servicio Apache este corriendo
 2. **XAMPP**: Necesario para ejecutar MySQL. Asegurate que el servicio MySQL este corriendo
+3. **Python**: Necesario para ejecutar las interfaces de los hilos
+4. **Composer**: Necesario para usar las dependencias necesarias
 
 ## Arquitectura del proyecto
 El proyecto esta dividido en tres componentes principales:
@@ -164,39 +166,14 @@ despues debemos asignar la ip asignada a nuestra pc por la red a nuestro APACHE 
 
 **config>http.conf**  aqui se debe buscar la linea listen e introducimos nuestra ip y puerto que ocupamos en la red.
 
+**composer install**    para instalar las dependencias
+
+## para ejecutar los hilos 
+
+**python cola_interface.py**
+
+**python notification_interface.py**
 
 
-
-
-
-
-
-
-utilizaremos composer
-composer init
-instalamos dependencia spatie/async
-composer require spatie/async
-
-procesarcola.php
-
-
-
-
-
-
-
-
-separar la funcion depositar, retirar
-
-crear un hilo para historial_transacciones /// mas hilos hay que poner para que procesen la cola
-hay que tener cuidado con los hilos en simultaneo con que puedan estar haciendo transacciones que ya se esten haciendo.
-en la tabla pendiente se puede agregar un campo de ocupado y nivel de aislamiento hasta que no haga el update no puedan hacer select.
-analizar operaciones de transacciones con aislamiento.
-
-
-
-en historial_transacciones crear otro hilo para respuesta. 
-
-el cliente va a tener una api para poder mandar de vuelta #transacciones.
 
 
