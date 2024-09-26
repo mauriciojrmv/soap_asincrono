@@ -1,27 +1,19 @@
 <?php
 require_once 'conectionpool.php';  // Pool de conexiones y gestor de transacciones
-require_once 'Peticiones.php';      // Cola de peticiones
 
 class PersonService {
-    private $peticiones;
     private $soapClient;
 
     public function __construct() {
         try {
             // Obtener el cliente SOAP desde el pool de conexiones
-            $this->soapClient = new SoapClient(null, [
-                'location' => "http://localhost:8000/colas/bd.php", // URL de PC2
-                'uri' => "urn:DatabaseService"
-            ]);
-    
-            // Instanciar la clase Peticiones
-            $this->peticiones = new Peticiones();
-    
+            $pool = ConnectionPool::getInstance();
+            $this->soapClient = $pool->getConnection();
+
             // Verificación de la conexión SOAP
             if (!$this->soapClient) {
                 throw new Exception("No se pudo obtener una conexión SOAP desde el pool.");
             }
-    
         } catch (Exception $e) {
             throw new SoapFault("Server", "Error en la conexión SOAP: " . $e->getMessage());
         }
@@ -64,67 +56,6 @@ class PersonService {
             throw $e;  // Propagar errores de nivel 2 o 3
         } catch (Exception $e) {
             throw new SoapFault("Server", "Nivel 2: Error - " . $e->getMessage());
-        }
-    }
-
-    // Método para realizar un depósito con la cola de peticiones y el pool
-    public function depositar($cuenta_id, $monto, $token) {
-        try {
-            // Crear una nueva petición
-            $this->peticiones->agregarPeticion('depositar', [
-                'cuenta_id' => $cuenta_id,
-                'monto' => $monto,
-                'token' => $token
-            ]);
-
-            // Ejecutar el depósito
-            $result = $this->remoteCall('depositar', [$cuenta_id, $monto, $token]);
-
-            // Marcar la petición como realizada
-            $this->peticiones->marcarComoRealizada(['cuenta_id' => $cuenta_id, 'monto' => $monto, 'token' => $token]);
-
-            return "Depósito exitoso.";
-        } catch (Exception $e) {
-            // Marcar la petición como errónea
-            $this->peticiones->marcarError(['cuenta_id' => $cuenta_id, 'monto' => $monto, 'token' => $token]);
-            throw new SoapFault("Server", "Error al realizar el depósito: " . $e->getMessage());
-        }
-    }
-
-    // Método para realizar un retiro con la cola de peticiones y el pool
-    public function retirar($cuenta_id, $monto, $token) {
-        try {
-            // Crear una nueva petición
-            $this->peticiones->agregarPeticion('retirar', [
-                'cuenta_id' => $cuenta_id,
-                'monto' => $monto,
-                'token' => $token
-            ]);
-
-            // Ejecutar el retiro
-            $result = $this->remoteCall('retirar', [$cuenta_id, $monto, $token]);
-
-            // Marcar la petición como realizada
-            $this->peticiones->marcarComoRealizada(['cuenta_id' => $cuenta_id, 'monto' => $monto, 'token' => $token]);
-
-            return "Retiro exitoso.";
-        } catch (Exception $e) {
-            // Marcar la petición como errónea
-            $this->peticiones->marcarError(['cuenta_id' => $cuenta_id, 'monto' => $monto, 'token' => $token]);
-            throw new SoapFault("Server", "Error al realizar el retiro: " . $e->getMessage());
-        }
-    }
-
-    // Método remoto para conectar al servidor de base de datos
-    private function remoteCall($method, $params) {
-        try {
-            // Usar la conexión desde el pool
-            $client = $this->soapClient;  // Conexión ya obtenida en el constructor
-    
-            // Realizar la llamada SOAP
-            return $client->__soapCall($method, $params);
-        } catch (SoapFault $e) {
-            throw new SoapFault("Server", "Nivel 3: Error - Problema al acceder a la base de datos: " . $e->getMessage());
         }
     }
 
@@ -182,9 +113,70 @@ class PersonService {
             throw new SoapFault("Server", "Nivel 2: Error - " . $e->getMessage());  // Manejo de errores de Nivel 2 o 3
         }
     }
+
+// Método para realizar un depósito con la cola de peticiones y el pool
+public function depositar($cuenta_id, $monto, $token, $callback_url) {
+    try {
+        // Crear una nueva petición en estado "Pendiente" en la tabla `peticiones`
+        $this->remoteCall('agregarPeticion', [
+            'tipo' => 'deposito',
+            'cuenta_id' => $cuenta_id,
+            'monto' => $monto,
+            'token' => $token,
+            'callback_url' => $callback_url  // Guardamos la URL de callback del cliente
+        ]);
+
+        // Devolver un mensaje de éxito indicando que la transacción está en cola
+        return true;
+    } catch (SoapFault $e) {
+        throw new SoapFault("Server", "Error al encolar el depósito: " . $e->getMessage());
+    }
+}
+
+// Método para realizar un retiro con la cola de peticiones y el pool
+public function retirar($cuenta_id, $monto, $token, $callback_url) {
+    try {
+        // Crear una nueva petición en estado "Pendiente" en la tabla `peticiones`
+        $this->remoteCall('agregarPeticion', [
+            'tipo' => 'retiro',
+            'cuenta_id' => $cuenta_id,
+            'monto' => $monto,
+            'token' => $token,
+            'callback_url' => $callback_url  // Guardamos la URL de callback del cliente
+        ]);
+
+        // Devolver un mensaje de éxito indicando que la transacción está en cola
+        return true;
+    } catch (SoapFault $e) {
+        throw new SoapFault("Server", "Error al encolar el retiro: " . $e->getMessage());
+    }
+}
+
+    // Método para consultar el estado de la transacción
+    public function getEstadoTransaccion($token) {
+        try {
+            // Hacer una llamada remota al método de la base de datos para obtener el estado de la transacción
+            return $this->remoteCall('getEstadoTransaccion', [$token]);
+        } catch (SoapFault $e) {
+            throw new SoapFault("Server", "Error al obtener el estado de la transacción: " . $e->getMessage());
+        }
+    }
+
+    // Llamadas remotas para conectar al servidor de base de datos
+    private function remoteCall($method, $params) {
+        try {
+            // Realizar la llamada SOAP al método en bd.php
+            return $this->soapClient->__soapCall($method, $params);
+        } catch (SoapFault $e) {
+            throw new SoapFault("Server", "Nivel 3: Error - Problema al acceder a la base de datos: " . $e->getMessage());
+        }
+    }
+
 }
 
 // Configuración del servidor SOAP
 $server = new SoapServer(null, ['uri' => "urn:PersonService"]);
 $server->setClass('PersonService');
 $server->handle();
+
+

@@ -1,0 +1,18 @@
+{
+    "name": "mauricio/colas",
+    "description": "sistema de colas y transacciones bancarias con php",
+    "require": {
+        "spatie/async": "^1.6"
+    },
+    "autoload": {
+        "psr-4": {
+            "Mauricio\\Colas\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Mauricio Mattinen",
+            "email": "mauricio.jr.mattinen.valdez@gmail.com"
+        }
+    ]
+}

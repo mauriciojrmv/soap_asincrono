@@ -53,7 +53,7 @@ Utiliza MySQL para conectarse a la base de datos. los credenciales deben editars
 ## Creacion de la Base de datos 
 Ejecuta las siguientes sentencias SQL para crear la base de datos y la tabla:
 
--- Crear base de datos
+-- Crear base de datos si no existe
 CREATE DATABASE IF NOT EXISTS banco_db;
 USE banco_db;
 
@@ -96,41 +96,36 @@ CREATE TABLE IF NOT EXISTS transacciones (
     tipo_transaccion ENUM('deposito', 'retiro') NOT NULL,
     monto DECIMAL(10, 2) NOT NULL,
     token VARCHAR(255) NOT NULL UNIQUE,
+    estado_notificacion VARCHAR(20) DEFAULT 'pendiente',
+    callback_url VARCHAR(255) NOT NULL,
     fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (cuenta_id) REFERENCES cuentas(id) ON DELETE CASCADE
 );
 
-CREATE TABLE historial_transacciones (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    cuenta_id INT NOT NULL,
-    monto DECIMAL(10, 2) NOT NULL,
-    token VARCHAR(255) NOT NULL,
-    estado ENUM('Realizado') NOT NULL,
-    fecha_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(token) -- Evitar transacciones duplicadas
-);
-
-CREATE TABLE log_errores (
+-- Crear tabla de log de errores
+CREATE TABLE IF NOT EXISTS log_errores (
     id INT AUTO_INCREMENT PRIMARY KEY,
     peticion_id VARCHAR(255) NOT NULL,
     tipo VARCHAR(50),
     cuenta_id INT,
     mensaje_error TEXT,
-    fecha_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    fecha_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (cuenta_id) REFERENCES cuentas(id) ON DELETE CASCADE
 );
 
-
-CREATE TABLE peticiones (
+-- Crear tabla de peticiones (cola de transacciones)
+CREATE TABLE IF NOT EXISTS peticiones (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    peticion_id VARCHAR(255) NOT NULL,
-    tipo ENUM('depositar', 'retirar') NOT NULL,
+    tipo ENUM('deposito', 'retiro') NOT NULL,
     cuenta_id INT NOT NULL,
     monto DECIMAL(10, 2) NOT NULL,
-    token VARCHAR(255) NOT NULL,
+    token VARCHAR(255) NOT NULL UNIQUE,
+    callback_url VARCHAR(255) NOT NULL,
     estado ENUM('Pendiente', 'Realizado', 'Error') DEFAULT 'Pendiente',
     intentos INT DEFAULT 0,
     fecha_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
 
 
 
@@ -177,6 +172,31 @@ despues debemos asignar la ip asignada a nuestra pc por la red a nuestro APACHE 
 
 
 
+utilizaremos composer
+composer init
+instalamos dependencia spatie/async
+composer require spatie/async
 
+procesarcola.php
+
+
+
+
+
+
+
+
+separar la funcion depositar, retirar
+
+crear un hilo para historial_transacciones /// mas hilos hay que poner para que procesen la cola
+hay que tener cuidado con los hilos en simultaneo con que puedan estar haciendo transacciones que ya se esten haciendo.
+en la tabla pendiente se puede agregar un campo de ocupado y nivel de aislamiento hasta que no haga el update no puedan hacer select.
+analizar operaciones de transacciones con aislamiento.
+
+
+
+en historial_transacciones crear otro hilo para respuesta. 
+
+el cliente va a tener una api para poder mandar de vuelta #transacciones.
 
 
