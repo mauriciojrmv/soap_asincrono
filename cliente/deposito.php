@@ -2,33 +2,33 @@
 session_start();
 error_log("Session ID: " . session_id());
 
-// Detect if this is a SOAP request
+// Detectar si es una solicitud SOAP
 if (isset($_SERVER['CONTENT_TYPE']) && strpos($_SERVER['CONTENT_TYPE'], 'text/xml') !== false) {
     class ClienteService {
         public function notificarEstadoTransaccion($token, $status, $mensaje) {
             session_start();
-            // Store the notification in the session
+            // Guardar la notificación en la sesión
             $_SESSION['notificacion'] = [
                 'token' => $token,
                 'status' => $status,
                 'mensaje' => $mensaje
             ];
-            error_log("Notification stored in session: " . print_r($_SESSION['notificacion'], true));
+            error_log("Notificación almacenada en la sesión: " . print_r($_SESSION['notificacion'], true));
         }
     }
 
-    // SOAP server handling
+    // Manejo del servidor SOAP
     try {
         $server = new SoapServer(null, ['uri' => "urn:ClienteService"]);
         $server->setClass('ClienteService');
         $server->handle();
     } catch (SoapFault $e) {
-        error_log("SOAP Error: " . $e->getMessage());
+        error_log("Error SOAP: " . $e->getMessage());
     }
     exit();
 }
 
-// Regular HTTP request handling for deposit functionality
+// Manejo de la solicitud HTTP regular para la funcionalidad de depósito
 if (!isset($_SESSION['login'])) {
     header("Location: login.php");
     exit();
@@ -37,14 +37,14 @@ if (!isset($_SESSION['login'])) {
 $message = '';
 $message_type = '';
 
-// Include the function to get the SOAP client
+// Incluimos el cliente SOAP
 include 'soapClient.php';
 
 try {
-    // Get the SOAP client using the function
+    // Obtenemos el cliente SOAP
     $client = getSoapClient();
 
-    // Get the customer's accounts
+    // Obtenemos las cuentas del cliente
     $cuentas = $client->getCuentasCliente($_SESSION['login']);
 } catch (SoapFault $e) {
     if (strpos($e->getMessage(), 'Could not connect to host') !== false) {
@@ -56,24 +56,26 @@ try {
     }
 }
 
-// Logic to handle deposit form submissions
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && !isset($_POST['check_notificacion'])) {
-    // Handle deposit case
+// Manejo del formulario de depósito
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    // Datos del depósito
     $cuenta_id = htmlspecialchars($_POST['cuenta_id']);
     $monto = htmlspecialchars($_POST['monto']);
-    $token = bin2hex(random_bytes(16));  // Generate a unique 32-character token
+    $token = bin2hex(random_bytes(16));  // Generamos un token único
 
     try {
-        // Client callback URL
+        // URL de callback
         $callback_url = "http://localhost:8000/colas/cliente/deposito.php";
 
-        // Call the SOAP service to enqueue the transaction with the callback URL
+        // Llamamos al servicio SOAP para encolar la transacción
         $response = $client->depositar($cuenta_id, $monto, $token, $callback_url);
 
         if ($response === true) {
-            // Confirm to the user that the transaction has been enqueued
+            // Guardamos el token y otros datos en la sesión
             $_SESSION['message'] = "Su transacción ha sido encolada. El token de su transacción es: " . $token;
             $_SESSION['message_type'] = 'success';
+            $_SESSION['token'] = $token; // Guardamos el token para verificar el estado luego
+            
             header("Location: deposito.php");
             exit();
         } else {
@@ -86,42 +88,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && !isset($_POST['check_notificacion'])
     }
 }
 
-// Logic to handle notifications within the same page (AJAX requests)
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['check_notificacion'])) {
-    error_log("Notification check triggered");
-
-    // Log session data
-    error_log("Session data: " . print_r($_SESSION, true));
-
-    // Check if there's a notification stored in the session
-    if (isset($_SESSION['notificacion'])) {
-        error_log("Notification found in session");
-
-        // Return JSON response with the notification details
-        echo json_encode([
-            'status' => 'success',
-            'message' => $_SESSION['notificacion']['mensaje']
-        ]);
-
-        // Clear the notification after sending it to the frontend
-        unset($_SESSION['notificacion']);
-        exit();
-    } else {
-        error_log("No notification found in session");
-
-        // No notification found
-        echo json_encode(['status' => 'none']);
-        exit();
-    }
-}
-
-// Show messages stored in the session
+// Mostrar mensajes almacenados en la sesión
 if (isset($_SESSION['message'])) {
     $message = $_SESSION['message'];
     $message_type = $_SESSION['message_type'];
     unset($_SESSION['message']);
     unset($_SESSION['message_type']);
 }
+
 ?>
 
 <!DOCTYPE html>
@@ -133,55 +107,38 @@ if (isset($_SESSION['message'])) {
     <link rel="stylesheet" href="styles.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-        // Periodically call 'deposito.php' to check if the notification has arrived
-        setInterval(function() {
+        // Función para verificar el estado de la transacción
+        function verificarEstadoTransaccion(token) {
             $.ajax({
-                url: 'deposito.php',
+                url: 'http://localhost:8000/colas/server.php',
                 method: 'POST',
-                data: { check_notificacion: true },
+                data: { token: token, action: 'verificarEstadoNotificacion' },  // Acción y token
                 success: function(response) {
                     try {
                         const data = JSON.parse(response);
-                        if (data.status === 'success') {
-                            alert('Notificación: ' + data.message);
-                            $('#notification-area').html('<p>' + data.message + '</p>');
+                        if (data.estado_notificacion === 'enviada') {
+                            // Mostramos el mensaje de éxito con los datos del depósito
+                            $('#notification-area').html('<p>Transacción exitosa: Se ha depositado $' + data.monto + ' a la cuenta ' + data.cuenta_id + ' el ' + data.fecha + '.</p>');
+                            clearInterval(checkInterval);  // Detenemos el intervalo
                         } else {
-                            console.log('No new notifications');
+                            console.log('Estado actual: ' + data.estado_notificacion);
                         }
                     } catch (error) {
-                        console.error('Error parsing JSON response: ' + error);
+                        console.error('Error al procesar la respuesta JSON: ' + error);
                     }
                 },
                 error: function(xhr, status, error) {
-                    console.error('Error checking notifications: ' + error);
-                }
-            });
-        }, 5000);  // Check every 5 seconds
-
-        // Manual notification check
-        function verificarNotificacionManual() {
-            $.ajax({
-                url: 'deposito.php',
-                method: 'POST',
-                data: { check_notificacion: true },
-                success: function(response) {
-                    try {
-                        const data = JSON.parse(response);
-                        if (data.status === 'success') {
-                            alert('Notificación: ' + data.message);
-                            $('#notification-area').html('<p>' + data.message + '</p>');
-                        } else {
-                            alert('No hay nuevas notificaciones.');
-                        }
-                    } catch (error) {
-                        console.error('Error parsing JSON response: ' + error);
-                    }
-                },
-                error: function(xhr, status, error) {
-                    console.error('Error checking notification manually: ' + error);
+                    console.error('Error al verificar el estado de la transacción: ' + error);
                 }
             });
         }
+
+        // Si existe un token en la sesión, iniciamos la verificación periódica
+        <?php if (isset($_SESSION['token'])): ?>
+            var checkInterval = setInterval(function() {
+                verificarEstadoTransaccion('<?= $_SESSION['token'] ?>');
+            }, 5000);  // Verificamos cada 5 segundos
+        <?php endif; ?>
     </script>
 </head>
 <body>
@@ -203,14 +160,14 @@ if (isset($_SESSION['message'])) {
             <div class="form-container visible">
                 <h1>Depósito</h1>
 
-                <!-- Show success or error messages -->
+                <!-- Mostrar mensajes de éxito o error -->
                 <?php if ($message): ?>
                     <div class="message <?= $message_type ?>">
                         <?= htmlspecialchars($message) ?>
                     </div>
                 <?php endif; ?>
 
-                <!-- Deposit form -->
+                <!-- Formulario de depósito -->
                 <form action="deposito.php" method="POST">
                     <label for="cuenta_id">Seleccionar Cuenta:</label>
                     <select id="cuenta_id" name="cuenta_id" required>
@@ -225,15 +182,7 @@ if (isset($_SESSION['message'])) {
                     <button type="submit">Realizar Depósito</button>
                 </form>
 
-                <!-- Manual notification check button -->
-                <button id="check-notification-btn">Check Notification</button>
-                <script>
-                    document.getElementById('check-notification-btn').addEventListener('click', function() {
-                        verificarNotificacionManual();
-                    });
-                </script>
-
-                <!-- Notification area -->
+                <!-- Área de notificaciones -->
                 <div id="notification-area"></div>
             </div>
         </div>

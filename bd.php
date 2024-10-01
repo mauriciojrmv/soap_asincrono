@@ -182,6 +182,13 @@ public function getCuentasInfo() {
     }
 }
 
+
+
+//PETICIONES
+
+
+
+
 // Insertar una petición de transacción (depósito o retiro) en la tabla de peticiones
 public function agregarPeticion($tipo, $cuenta_id, $monto, $token, $callback_url) {
     try {
@@ -233,8 +240,9 @@ public function verificarUnicidadTokenEnPeticiones($token) {
 
 
 // Obtener las peticiones pendientes
-public function obtenerPeticionesPendientes() {
-    $stmt = $this->pdo->prepare("SELECT * FROM peticiones WHERE estado = 'Pendiente' AND intentos < 5");
+public function obtenerPeticionesPendientes($limite = 100) {
+    $stmt = $this->pdo->prepare("SELECT * FROM peticiones WHERE estado = 'Pendiente' AND intentos < 5 LIMIT :limite");
+    $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
@@ -358,15 +366,23 @@ public function procesarRetiro($cuenta_id, $monto, $token, $callback_url) {
 }
 
 
+
+
+
+//NOTIFICACIONES
+
+
+
+
+
 // Obtener las transacciones pendientes de notificación
-public function obtenerTransaccionesPendientesNotificacion() {
-    // Aquí seleccionamos las transacciones pendientes por el estado de notificación
-    $stmt = $this->pdo->prepare("SELECT * FROM transacciones WHERE estado_notificacion = 'pendiente'");
+public function obtenerTransaccionesPendientesNotificacion($limite = 300) {
+    // Seleccionamos las transacciones pendientes de notificación con un límite
+    $stmt = $this->pdo->prepare("SELECT * FROM transacciones WHERE estado_notificacion = 'pendiente' LIMIT :limite");
+    $stmt->bindParam(':limite', $limite, PDO::PARAM_INT);
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
-
-
 
 
 
@@ -429,6 +445,34 @@ public function enviarNotificacionCliente($callback_url, $token, $status, $mensa
     }
 }
 
+ // Nueva función para obtener el estado de la notificación
+ public function getEstadoNotificacion($token) {
+    try {
+        // Consultar la transacción por el token
+        $stmt = $this->pdo->prepare("
+            SELECT estado_notificacion, monto, cuenta_id, fecha
+            FROM transacciones 
+            WHERE token = :$token
+        ");
+        $stmt->execute(['token' => $token]);
+
+        // Obtener los resultados
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($result) {
+            return [
+                'estado_notificacion' => $result['estado_notificacion'],
+                'monto' => $result['monto'],
+                'cuenta_id' => $result['cuenta_id'],
+                'fecha' => $result['fecha']
+            ];
+        } else {
+            throw new SoapFault("Server", "No se encontró una transacción con el token proporcionado.");
+        }
+    } catch (PDOException $e) {
+        throw new SoapFault("Server", "Error en la base de datos al obtener el estado de la notificación: " . $e->getMessage());
+    }
+}
 
 }
 

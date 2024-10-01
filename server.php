@@ -162,6 +162,28 @@ public function retirar($cuenta_id, $monto, $token, $callback_url) {
         }
     }
 
+    // Método para consultar el estado de la notificación de una transacción
+    public function verificarEstadoNotificacion($token) {
+        try {
+            // Llamada remota para obtener el estado de la notificación de la transacción
+            $result = $this->remoteCall('getEstadoNotificacion', [$token]);
+
+            if (isset($result['estado_notificacion']) && $result['estado_notificacion'] === 'enviada') {
+                // Si la transacción ha sido enviada, devolvemos los detalles
+                return [
+                    'status' => 'enviada',
+                    'monto' => $result['monto'],
+                    'cuenta_id' => $result['cuenta_id'],
+                    'fecha' => $result['fecha']
+                ];
+            } else {
+                return ['status' => 'pendiente'];
+            }
+        } catch (SoapFault $e) {
+            throw new SoapFault("Server", "Error al verificar la notificación: " . $e->getMessage());
+        }
+    }
+
     // Llamadas remotas para conectar al servidor de base de datos
     private function remoteCall($method, $params) {
         try {
@@ -175,8 +197,27 @@ public function retirar($cuenta_id, $monto, $token, $callback_url) {
 }
 
 // Configuración del servidor SOAP
-$server = new SoapServer(null, ['uri' => "urn:PersonService"]);
-$server->setClass('PersonService');
-$server->handle();
+try {
+    // Verificar si la solicitud es AJAX
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'verificarEstadoNotificacion') {
+        // Procesar la verificación del estado de la notificación
+        $token = $_POST['token'];
+        
+        // Crear instancia del servicio y verificar estado de la notificación
+        $service = new PersonService();
+        $estadoNotificacion = $service->verificarEstadoNotificacion($token);
 
+        // Devolver respuesta en formato JSON
+        header('Content-Type: application/json');
+        echo json_encode($estadoNotificacion);
+        exit();
+    }
 
+    // Configuración normal del servidor SOAP si no es una solicitud AJAX
+    $server = new SoapServer(null, ['uri' => "urn:PersonService"]);
+    $server->setClass('PersonService');
+    $server->handle();
+} catch (SoapFault $e) {
+    error_log("Error en el servidor SOAP: " . $e->getMessage());
+    echo "Error en el servidor SOAP: " . $e->getMessage();
+}

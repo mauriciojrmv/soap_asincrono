@@ -177,3 +177,21 @@ despues debemos asignar la ip asignada a nuestra pc por la red a nuestro APACHE 
 
 
 
+
+
+
+
+
+
+
+
+
+
+el hilo de notificacion puede llamar a la bd por el estado de la transaccion
+
+otra nueva funcion verificar transaccion a la api servidor te debe devolver los datos de transaccion. podriamos emparejar con el token que usamos.
+vos avisame cuando lo termines que ya lo hiciste.
+en front end tiene que tener un servicio que notifique al cliente que ya esta y los datos de la transaccion.
+usar notificaciones push via socket.
+cuando reciba ok de parte del server quiero que el cliente llame a una funcion del server para que muestre el deposito hecho emparejado con el token que usamos para la transaccion y que este en estado de enviado el notificacion
+

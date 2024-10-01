@@ -6,8 +6,10 @@ use Spatie\Async\Pool;
 
 $bd = new DatabaseService();
 
+// Limitar el número de peticiones procesadas por ciclo
+$limitePeticiones = 300;
 // 1. Obtener las peticiones pendientes
-$peticionesPendientes = $bd->obtenerPeticionesPendientes();
+$peticionesPendientes = $bd->obtenerPeticionesPendientes($limitePeticiones);
 
 if (empty($peticionesPendientes)) {
     echo "No hay peticiones pendientes por procesar.\n";

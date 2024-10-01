@@ -6,8 +6,9 @@ use Spatie\Async\Pool;
 
 $bd = new DatabaseService();
 
+$limiteTransacciones = 300;
 // Obtener las transacciones pendientes de notificación
-$transaccionesPendientes = $bd->obtenerTransaccionesPendientesNotificacion();
+$transaccionesPendientes = $bd->obtenerTransaccionesPendientesNotificacion($limiteTransacciones);
 
 if (empty($transaccionesPendientes)) {
     echo "No hay transacciones pendientes de notificacion.\n";
@@ -15,7 +16,7 @@ if (empty($transaccionesPendientes)) {
 }
 
 // Crear un pool de hilos para procesar notificaciones con concurrencia de 3 (puedes ajustar el número)
-$pool = Pool::create()->concurrency(1);
+$pool = Pool::create()->concurrency(3);
 
 // Procesar notificaciones en paralelo
 foreach ($transaccionesPendientes as $transaccion) {
